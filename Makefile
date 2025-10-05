@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c99
+CFLAGS = -Wall -Wextra -std=gnu99
 SRC = src/ls-v1.0.0.c
 BIN = bin/ls-v1.0.0
 
