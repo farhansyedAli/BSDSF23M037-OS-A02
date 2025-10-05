@@ -48,3 +48,18 @@ if (st.st_mode & S_IXUSR)  // owner has execute permission
 
 These macros help you interpret the mode bits, allowing you to print file types (like d for directories) and permission strings (rwxr-xr-x) in the ls -l format.
 
+Feature 3:
+
+Q1. Explain the general logic for printing items in a "down then across" columnar format. Why is a simple single loop through the list of filenames insufficient for this task?
+
+In the "down then across" format, the program first stores all filenames in an array and determines how many rows and columns fit on the screen based on the terminal width and the longest filename.
+Printing happens row by row — for each row, we print the items from each column that belong in that row (e.g., filenames[0], filenames[0 + num_rows], filenames[0 + 2*num_rows], etc.).
+
+A simple single loop is insufficient because it would only print filenames in one continuous list (top to bottom), without correctly organizing them into aligned columns that adjust dynamically to the screen size.
+
+Q2. What is the purpose of the ioctl system call in this context? What would be the limitations of your program if you only used a fixed-width fallback (e.g., 80 columns) instead of detecting the terminal size?
+
+The ioctl system call retrieves the current terminal’s width in columns (TIOCGWINSZ). This allows the program to calculate how many filenames can fit per row and dynamically adjust the number of columns based on the user’s terminal size.
+
+If only a fixed-width fallback (like 80 columns) were used, the output would not adapt to different terminal sizes — it might appear cramped on small screens or waste space on wider terminals, breaking alignment and usability.
+
