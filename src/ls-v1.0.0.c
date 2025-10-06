@@ -19,6 +19,13 @@ void do_ls(const char *dir);
 void do_ls_long(const char *dir);
 void do_ls_horizontal(const char *dir);
 
+int compare_names(const void *a, const void *b) {
+    const char *nameA = *(const char **)a;
+    const char *nameB = *(const char **)b;
+    return strcmp(nameA, nameB);
+}
+
+
 int main(int argc, char *argv[]) {
     int opt;
     int display_mode = 0; // 0 = default (down-then-across), 1 = long, 2 = horizontal
@@ -116,6 +123,10 @@ void do_ls(const char *dir) {
         free(names);
         return;
     }
+    
+    // Sort filenames alphabetically before display
+    qsort(names, count, sizeof(char *), compare_names);
+
 
     // Step 2: Get terminal width
     struct winsize w;
