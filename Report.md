@@ -63,3 +63,22 @@ The ioctl system call retrieves the current terminal’s width in columns (TIOCG
 
 If only a fixed-width fallback (like 80 columns) were used, the output would not adapt to different terminal sizes — it might appear cramped on small screens or waste space on wider terminals, breaking alignment and usability.
 
+Feature 4:
+
+1. Difference in Implementation Complexity
+
+The “down then across” (vertical) display logic is more complex than the “across” (horizontal) format.
+It requires pre-calculating both rows and columns, determining how many filenames can fit per column, and printing in a specific order using index jumps (e.g., filenames[r + c × rows]).
+In contrast, the horizontal method only tracks the current line width and wraps when the next filename would exceed the terminal width, so it needs less pre-computation.
+
+2. Managing Multiple Display Modes (-l, -x, default)
+
+A flag variable (e.g., display_mode) was used to store the selected mode based on the parsed command-line options:
+
+-l → calls do_ls_long() for long listing format
+
+-x → calls do_ls_horizontal() for horizontal layout
+
+default (no option) → calls do_ls() for vertical “down then across” layout
+
+This simple branching structure ensures only the correct display function runs for each mode.
