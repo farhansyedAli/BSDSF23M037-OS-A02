@@ -17,37 +17,46 @@ extern int errno;
 
 void do_ls(const char *dir);
 void do_ls_long(const char *dir);
+void do_ls_horizontal(const char *dir);
 
 int main(int argc, char *argv[]) {
     int opt;
-    int long_listing = 0;
+    int display_mode = 0; // 0 = default (down-then-across), 1 = long, 2 = horizontal
 
-    while ((opt = getopt(argc, argv, "l")) != -1) {
+    while ((opt = getopt(argc, argv, "lx")) != -1) {
         switch (opt) {
             case 'l':
-                long_listing = 1;
+                display_mode = 1;
+                break;
+            case 'x':
+                display_mode = 2;
                 break;
             default:
-                fprintf(stderr, "Usage: %s [-l] [directory...]\n", argv[0]);
+                fprintf(stderr, "Usage: %s [-l | -x] [directory...]\n", argv[0]);
                 exit(EXIT_FAILURE);
         }
     }
 
     if (optind == argc) {
-        if (long_listing)
+        if (display_mode == 1)
             do_ls_long(".");
+        else if (display_mode == 2)
+            do_ls_horizontal(".");
         else
             do_ls(".");
     } else {
         for (int i = optind; i < argc; i++) {
             printf("Directory listing of %s:\n", argv[i]);
-            if (long_listing)
+            if (display_mode == 1)
                 do_ls_long(argv[i]);
+            else if (display_mode == 2)
+                do_ls_horizontal(argv[i]);
             else
                 do_ls(argv[i]);
             puts("");
         }
     }
+
     return 0;
 }
 
@@ -189,6 +198,77 @@ void do_ls_long(const char *dir) {
     }
 
     closedir(dp);
+}
+
+
+void do_ls_horizontal(const char *dir) {
+    DIR *dp;
+    struct dirent *entry;
+
+    dp = opendir(dir);
+    if (!dp) {
+        fprintf(stderr, "Cannot open directory: %s\n", dir);
+        return;
+    }
+
+    // Step 1: Gather filenames
+    int capacity = 64, count = 0, maxlen = 0;
+    char **names = malloc(capacity * sizeof(char *));
+    if (!names) {
+        perror("malloc");
+        closedir(dp);
+        return;
+    }
+
+    while ((entry = readdir(dp)) != NULL) {
+        if (entry->d_name[0] == '.') continue;
+        if (count >= capacity) {
+            capacity *= 2;
+            names = realloc(names, capacity * sizeof(char *));
+            if (!names) {
+                perror("realloc");
+                closedir(dp);
+                return;
+            }
+        }
+        names[count] = strdup(entry->d_name);
+        if (!names[count]) {
+            perror("strdup");
+            closedir(dp);
+            return;
+        }
+        int len = strlen(entry->d_name);
+        if (len > maxlen) maxlen = len;
+        count++;
+    }
+    closedir(dp);
+
+    if (count == 0) {
+        free(names);
+        return;
+    }
+
+    // Step 2: Determine terminal width
+    struct winsize w;
+    int term_width = 80; // fallback
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) == 0 && w.ws_col > 0)
+        term_width = w.ws_col;
+
+    int col_width = maxlen + 2;
+    int current_width = 0;
+
+    // Step 3 & 4: Print filenames left-to-right
+    for (int i = 0; i < count; i++) {
+        if (current_width + col_width > term_width) {
+            printf("\n");
+            current_width = 0;
+        }
+        printf("%-*s", col_width, names[i]);
+        current_width += col_width;
+        free(names[i]);
+    }
+    printf("\n");
+    free(names);
 }
 
 
