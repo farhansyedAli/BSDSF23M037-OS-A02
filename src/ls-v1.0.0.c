@@ -13,6 +13,13 @@
 #include <sys/ioctl.h>
 
 
+#define COLOR_RESET   "\033[0m"
+#define COLOR_DIR     "\033[1;34m"  // Blue for directories
+#define COLOR_EXEC    "\033[1;32m"  // Green for executables
+#define COLOR_LINK    "\033[1;36m"  // Cyan for symbolic links
+#define COLOR_REG     "\033[0m"     // Default for regular files
+
+
 extern int errno;
 
 void do_ls(const char *dir);
@@ -24,6 +31,18 @@ int compare_names(const void *a, const void *b) {
     const char *nameB = *(const char **)b;
     return strcmp(nameA, nameB);
 }
+
+const char* get_color(struct stat *st) {
+    if (S_ISDIR(st->st_mode))
+        return COLOR_DIR;
+    else if (S_ISLNK(st->st_mode))
+        return COLOR_LINK;
+    else if (st->st_mode & S_IXUSR)
+        return COLOR_EXEC;
+    else
+        return COLOR_REG;
+}
+
 
 
 int main(int argc, char *argv[]) {
@@ -142,12 +161,23 @@ void do_ls(const char *dir) {
 
     // Step 4: Print down-then-across
     for (int r = 0; r < rows; r++) {
-        for (int c = 0; c < cols; c++) {
-            int i = c * rows + r;
-            if (i < count)
-                printf("%-*s", col_width, names[i]);
-        }
-        printf("\n");
+	    for (int c = 0; c < cols; c++) {
+		int i = c * rows + r;
+		if (i < count) {
+		    struct stat st;
+		    char path[1024];
+		    snprintf(path, sizeof(path), "%s/%s", dir, names[i]);
+
+		    if (lstat(path, &st) == -1) {
+		        perror("lstat");
+		        continue;
+		    }
+
+		    const char *color = get_color(&st);
+		    printf("%s%-*s%s", color, col_width, names[i], COLOR_RESET);
+		}
+	    }
+	    printf("\n");
     }
 
     // Step 5: Cleanup
