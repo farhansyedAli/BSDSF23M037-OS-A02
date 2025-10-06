@@ -106,3 +106,43 @@ int compare(const void *a, const void *b);
 Inside the function, the pointers are cast to the correct type (e.g., const char ** for strings), and then compared — for example, using strcmp() for alphabetical order.
 
 It takes const void * arguments because qsort() doesn’t know the type of data being sorted — this allows it to be type-agnostic and reusable for any data structure.
+
+
+
+Feature 6:
+
+Q1. How do ANSI escape codes work to produce color in a standard Linux terminal? Show the specific code sequence for printing text in green.
+Answer:
+ANSI escape codes are special character sequences that instruct the terminal to change the style or color of the text. Each sequence begins with \033[ (the escape character and bracket), followed by color/style codes, and ends with m.
+For example, to print text in green, the sequence is:
+
+printf("\033[0;32mThis text is green\033[0m\n");
+
+
+Here,
+
+0 → resets all attributes,
+
+32 → sets the foreground color to green,
+
+\033[0m → resets color back to default after printing.
+
+Q2. To color an executable file, you need to check its permission bits. Explain which bits in the st_mode field you need to check to determine if a file is executable by the owner, group, or others.
+Answer:
+In the st_mode field of struct stat, the executable permissions are represented by specific bit flags:
+
+S_IXUSR → executable by the owner
+
+S_IXGRP → executable by the group
+
+S_IXOTH → executable by others
+
+To check if a file is executable, you use bitwise AND operations, for example:
+
+if (st.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH))
+    // file is executable
+
+
+If any of these bits are set, the file should be displayed in the color designated for executables (commonly green).
+
+
