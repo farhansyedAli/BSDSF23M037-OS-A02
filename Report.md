@@ -82,3 +82,27 @@ A flag variable (e.g., display_mode) was used to store the selected mode based o
 default (no option) → calls do_ls() for vertical “down then across” layout
 
 This simple branching structure ensures only the correct display function runs for each mode.
+
+
+Feature 5:
+
+Q1. Why is it necessary to read all directory entries into memory before you can sort them? What are the potential drawbacks of this approach for directories containing millions of files?
+
+Answer:
+Sorting requires access to all elements at once so that they can be compared and rearranged. Therefore, all directory entries must first be read into memory before calling a sorting function like qsort().
+
+The drawback is that this approach uses memory proportional to the number of files — if a directory contains millions of files, it can lead to high memory consumption, possible slow performance, or even memory allocation failures on systems with limited RAM.
+
+Q2. Explain the purpose and signature of the comparison function required by qsort(). How does it work, and why must it take const void * arguments?
+
+Answer:
+qsort() is a generic sorting function that works on any data type. To achieve this flexibility, it relies on a user-defined comparison function that tells it how to compare two elements.
+
+The function signature is:
+
+int compare(const void *a, const void *b);
+
+
+Inside the function, the pointers are cast to the correct type (e.g., const char ** for strings), and then compared — for example, using strcmp() for alphabetical order.
+
+It takes const void * arguments because qsort() doesn’t know the type of data being sorted — this allows it to be type-agnostic and reusable for any data structure.
