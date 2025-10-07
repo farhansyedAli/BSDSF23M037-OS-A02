@@ -22,9 +22,10 @@
 
 extern int errno;
 
-void do_ls(const char *dir);
+void do_ls(const char *dir, int recursive_flag);
 void do_ls_long(const char *dir);
 void do_ls_horizontal(const char *dir);
+
 
 int compare_names(const void *a, const void *b) {
     const char *nameA = *(const char **)a;
@@ -44,12 +45,12 @@ const char* get_color(struct stat *st) {
 }
 
 
-
 int main(int argc, char *argv[]) {
     int opt;
-    int display_mode = 0; // 0 = default (down-then-across), 1 = long, 2 = horizontal
+    int display_mode = 0;     // 0 = default (down-then-across), 1 = long, 2 = horizontal
+    int recursive_flag = 0;   // 1 = recursive (-R)
 
-    while ((opt = getopt(argc, argv, "lx")) != -1) {
+    while ((opt = getopt(argc, argv, "lxR")) != -1) {
         switch (opt) {
             case 'l':
                 display_mode = 1;
@@ -57,8 +58,11 @@ int main(int argc, char *argv[]) {
             case 'x':
                 display_mode = 2;
                 break;
+            case 'R':
+                recursive_flag = 1;
+                break;
             default:
-                fprintf(stderr, "Usage: %s [-l | -x] [directory...]\n", argv[0]);
+                fprintf(stderr, "Usage: %s [-l | -x | -R] [directory...]\n", argv[0]);
                 exit(EXIT_FAILURE);
         }
     }
@@ -69,7 +73,7 @@ int main(int argc, char *argv[]) {
         else if (display_mode == 2)
             do_ls_horizontal(".");
         else
-            do_ls(".");
+            do_ls(".", recursive_flag);
     } else {
         for (int i = optind; i < argc; i++) {
             printf("Directory listing of %s:\n", argv[i]);
@@ -78,7 +82,7 @@ int main(int argc, char *argv[]) {
             else if (display_mode == 2)
                 do_ls_horizontal(argv[i]);
             else
-                do_ls(argv[i]);
+                do_ls(argv[i], recursive_flag);
             puts("");
         }
     }
@@ -86,9 +90,14 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void do_ls(const char *dir) {
+
+
+
+void do_ls(const char *dir, int recursive_flag) {
     DIR *dp;
     struct dirent *entry;
+
+    printf("\n%s:\n", dir); // Print directory header like ls -R
 
     dp = opendir(dir);
     if (dp == NULL) {
@@ -142,10 +151,9 @@ void do_ls(const char *dir) {
         free(names);
         return;
     }
-    
+
     // Sort filenames alphabetically before display
     qsort(names, count, sizeof(char *), compare_names);
-
 
     // Step 2: Get terminal width
     struct winsize w;
@@ -161,30 +169,48 @@ void do_ls(const char *dir) {
 
     // Step 4: Print down-then-across
     for (int r = 0; r < rows; r++) {
-	    for (int c = 0; c < cols; c++) {
-		int i = c * rows + r;
-		if (i < count) {
-		    struct stat st;
-		    char path[1024];
-		    snprintf(path, sizeof(path), "%s/%s", dir, names[i]);
+        for (int c = 0; c < cols; c++) {
+            int i = c * rows + r;
+            if (i < count) {
+                struct stat st;
+                char path[1024];
+                snprintf(path, sizeof(path), "%s/%s", dir, names[i]);
 
-		    if (lstat(path, &st) == -1) {
-		        perror("lstat");
-		        continue;
-		    }
+                if (lstat(path, &st) == -1) {
+                    perror("lstat");
+                    continue;
+                }
 
-		    const char *color = get_color(&st);
-		    printf("%s%-*s%s", color, col_width, names[i], COLOR_RESET);
-		}
-	    }
-	    printf("\n");
+                const char *color = get_color(&st);
+                printf("%s%-*s%s", color, col_width, names[i], COLOR_RESET);
+            }
+        }
+        printf("\n");
     }
 
-    // Step 5: Cleanup
+    // Step 5: Recursion
+    if (recursive_flag) {
+        for (int i = 0; i < count; i++) {
+            char path[1024];
+            snprintf(path, sizeof(path), "%s/%s", dir, names[i]);
+
+            struct stat st;
+            if (lstat(path, &st) == -1) continue;
+
+            if (S_ISDIR(st.st_mode)) {
+                if (strcmp(names[i], ".") != 0 && strcmp(names[i], "..") != 0) {
+                    do_ls(path, recursive_flag); // recursive call
+                }
+            }
+        }
+    }
+
+    // Step 6: Cleanup
     for (int i = 0; i < count; i++)
         free(names[i]);
     free(names);
 }
+
 
 
 void do_ls_long(const char *dir) {
