@@ -12,4 +12,4 @@ $(BIN): $(SRC)
 	$(CC) $(CFLAGS) $(SRC) -o $(BIN)
 
 clean:
-	rm -rf bi
+	rm -rf bin
