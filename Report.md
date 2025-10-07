@@ -146,3 +146,11 @@ if (st.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH))
 If any of these bits are set, the file should be displayed in the color designated for executables (commonly green).
 
 
+Feature 7:
+
+Q1. In a recursive function, what is a "base case"? In the context of your recursive ls, what is the base case that stops the recursion from continuing forever?
+A base case is the condition that terminates recursion — it prevents a function from calling itself indefinitely.
+In the recursive ls, the base case occurs when the function reaches a directory that contains no further subdirectories or encounters directories named "." or "..". These are skipped to prevent infinite recursion into the same or parent directory.
+
+Q2. Explain why it is essential to construct a full path (e.g., "parent_dir/subdir") before making a recursive call. What would happen if you simply called do_ls("subdir") from within the do_ls("parent_dir") function call?
+Constructing the full path ensures that the recursive call refers to the correct location in the filesystem. Without building "parent_dir/subdir", the program would try to open "subdir" relative to the current working directory (not the parent), which could result in incorrect paths, failed directory openings, or listing the wrong folders. Using the full path guarantees accurate navigation through nested directories.
